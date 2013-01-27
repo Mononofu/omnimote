@@ -1,9 +1,11 @@
-package org.furidamu.wakeontelnet
+package org.furidamu.omnimote
 
 import org.apache.commons.net.telnet.TelnetClient
 import java.io.PrintStream
 import java.io.BufferedReader
 import java.io.InputStreamReader
+
+import Constants._
 
 object Commander {
 	var outStream: PrintStream = null
@@ -26,8 +28,9 @@ object Commander {
 		sessionStarted -1l
 	}
 
-	def sendCommand(command: String, checkReply: Boolean = false): String = {
-		try {
+	def sendCommand(command: String, checkReply: Boolean = false) {
+		runInBackground {
+			try {
 				var reply = "Executed command: " + command
 				if(null == outStream)
 					startSession()
@@ -35,16 +38,16 @@ object Commander {
 				outStream.flush()
 				if(checkReply)
 					reply = inStream.readLine()
-				
+
 				endSession()
 				return reply
-	    	}
-	    	catch  {
+	    } catch  {
 	    		case e: java.net.ConnectException =>
 		    		return "failed to connect to server"
 		    	case e: java.net.SocketException =>
 		    		return "permission denied"
-	    	}
+	    }
+	  }
 	}
 
 	def receiverOn() = sendCommand("PO\r\n")
@@ -56,6 +59,7 @@ object Commander {
 	def setVolume(negDezibel: Int) = sendCommand("%03dVL\r\n".format(negDezibel * 2 + 161))
 
 	def selectTuner() = sendCommand("02FN\r\n")
-	def selectLaptop() = sendCommand("04FN\r\n")
+	def selectPC() = sendCommand("04FN\r\n")
 	def selectTV() = sendCommand("10FN\r\n")
+	def selectPI() = sendCommand("25FN\r\n")
 }
