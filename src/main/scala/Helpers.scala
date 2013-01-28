@@ -16,25 +16,14 @@ import _root_.android.util.Log
 
 import scala.collection.JavaConversions._
 
-import akka.actor.ActorSystem
-import com.typesafe.config.ConfigFactory
-import akka.actor.Props
 
 object Constants {
   val PREFERENCES_NAME = "wakeontelnet"
   val TELNET_TIMEOUT = 20
 
-  val customConf = ConfigFactory.parseString("""
-      akka.actor.deployment {
-        /my-service {
-          router = round-robin
-          nr-of-instances = 3
-        }
-      }
-      """)
-  val system = ActorSystem("MySystem", ConfigFactory.load(customConf))
 
-  val avActor = system.actorOf(Props[AVActor], name = "av")
+  val avActor = new AVActor()
+  avActor.start()
 
   implicit def ViewToRichView(v: View) = new RichView(v)
   implicit def TextViewToRichTextView(v: TextView) = new RichTextview(v)

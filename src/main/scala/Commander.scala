@@ -5,16 +5,11 @@ import java.io.PrintStream
 import java.io.BufferedReader
 import java.io.InputStreamReader
 
-import akka.actor.Actor
-import akka.actor.Props
-import akka.event.Logging
-import akka.actor.Cancellable
+import scala.actors.Actor
 
-import akka.util.duration._
-import akka.util.Timeout
-import akka.pattern.ask
-import akka.dispatch.Await
-
+import scala.concurrent.duration._
+import scala.concurrent.Await
+import scala.concurrent.ExecutionContext.Implicits.global
 
 import Constants._
 
@@ -23,30 +18,30 @@ case class GetOutput(cmd: String)
 case object CloseSocket
 
 class AVActor extends Actor {
-  val log = Logging(context.system, this)
   private var s: Option[java.net.Socket] = None
   private var pw: java.io.PrintWriter = _
-  private var timeout: Option[Cancellable] = None
 
-  def receive = {
-    case ExecuteCommand(cmd) => execute(cmd)
-    case GetOutput(cmd) => execute(cmd, true) match {
-      case Left(error) => sender ! error
-      case Right(output) => sender ! output
-    }
-    case CloseSocket =>
-      s.get.close()
-      s = None
-    case r => log.info("unknown request: " + r)
-  }
-
-  private def resetTimeout() {
-    timeout.map(c => c.cancel)
-    timeout = Some(system.scheduler.scheduleOnce(TELNET_TIMEOUT seconds, self, CloseSocket))
+  def act() {
+  	loop {
+  		reactWithin(TELNET_TIMEOUT * 1000) {
+		    case ExecuteCommand(cmd) => execute(cmd)
+		    case GetOutput(cmd) => execute(cmd, true) match {
+		      case Left(error) => sender ! error
+		      case Right(output) => sender ! output
+		    }
+		    case scala.actors.TIMEOUT =>
+		    	s match {
+		    		case Some(sock) =>
+				      sock.close()
+				      s = None
+				    case _ =>
+		    	}
+		    case r => log("unknown request: " + r)
+		  }
+		}
   }
 
   private def execute(cmd: String, output: Boolean = false): Either[Any, String] = {
-    resetTimeout()
     s match {
       case None =>
         try {
@@ -55,8 +50,8 @@ class AVActor extends Actor {
           pw = new java.io.PrintWriter(new java.io.OutputStreamWriter(s.get.getOutputStream()), true)
         } catch {
           case e: Exception =>
-            log.error("failed to connect to socket")
-            return Left(akka.actor.Status.Failure(e))
+            log("failed to connect to socket")
+            return Left(e)
         }
       case _ =>
     }
@@ -66,12 +61,14 @@ class AVActor extends Actor {
       var lines = ""
       try {
         for(line <- i.getLines()) {
-          log.info("got line: " + line)
+          log("got line: " + line)
           lines += line + "\n"
         }
+        log(s"replying with $lines")
         Right(lines)
       } catch {
         case ex: java.net.SocketTimeoutException =>
+        	log(s"replying with $lines (after timeout exception)")
           return Right(lines)
       }
     } else {
@@ -82,9 +79,6 @@ class AVActor extends Actor {
 
 
 object AVRemote {
-
-  implicit val timeout = Timeout(1 seconds)
-
   def on() = avActor ! ExecuteCommand("PO\r\n")
   def off() = avActor ! ExecuteCommand("PF\r\n")
   def selectTuner() = avActor ! ExecuteCommand("02FN\r\n")
@@ -93,10 +87,11 @@ object AVRemote {
   def selectPI() = avActor ! ExecuteCommand("25FN\r\n")
   def selectAUX() = avActor ! ExecuteCommand("01FN\r\n")
 
-  def isOn: Boolean = {
-    val future = avActor ? GetOutput("?P\r\n")
-    val out = Await.result(future, timeout.duration).asInstanceOf[String]
-    out.contains("PWR0")
+  def isOn: Boolean = (avActor !! GetOutput("?P\r\n"))() match {
+  	case out: String => out.contains("PWR0")
+  	case v =>
+  		log(s"error: received unexpected value $v in isOn")
+  		false
   }
 
   def mute(should: Boolean) {
@@ -109,21 +104,31 @@ object AVRemote {
     avActor ! ExecuteCommand("%03dVL\r\n".format(vol))
   }
 
-  def volumeUp() = setVolume(volume + 2)
-	def volumeDown() = setVolume(volume - 2)
+  def volumeUp() = {
+  	val v = volume()
+  	log(s"increasing volume to ${v + 2}")
+		setVolume(v + 2)
+  }
 
-  def volume: Int = {
-    val future = avActor ? GetOutput("?V\r\n")
-    val out = Await.result(future, timeout.duration).asInstanceOf[String]
-    val pattern = """VOL\d\d\d""".r
+	def volumeDown() = {
+  	val v = volume()
+  	log(s"decreasing volume to ${v - 2}")
+		setVolume(v - 2)
+  }
 
-    for(line <- out.split("\n")) {
-      pattern.findFirstIn(line) match {
-        case Some(v) =>
-          return (v.drop(3).toInt - 161) / 2
-        case None =>
-      }
-    }
-    -100
+  def volume(): Int = (avActor !! GetOutput("?V\r\n"))() match {
+  	case out: String =>
+    	val pattern = """VOL\d\d\d""".r
+	    for(line <- out.split("\n")) {
+	      pattern.findFirstIn(line) match {
+	        case Some(v) =>
+	          return (v.drop(3).toInt - 161) / 2
+	        case None =>
+	      }
+	    }
+	    -100
+  	case v =>
+  		log(s"error: received unexpected value $v in volume")
+  		-100
   }
 }

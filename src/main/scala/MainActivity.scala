@@ -27,21 +27,16 @@ class MainActivity extends Activity with TypedActivity {
     findView(TR.pi_btn).onClick = () => AVRemote.selectPI()
   }
 
-  override def dispatchKeyEvent(event: KeyEvent): Boolean = {
-    val action = event.getAction()
-    val keyCode = event.getKeyCode()
-    action match {
-      case KeyEvent.ACTION_DOWN =>
-        keyCode match {
-          case KeyEvent.KEYCODE_VOLUME_UP =>
-            AVRemote.volumeUp()
-            true
-          case KeyEvent.KEYCODE_VOLUME_DOWN =>
-            AVRemote.volumeDown()
-            true
-          case _ => super.dispatchKeyEvent(event)
-        }
-      case _ => super.dispatchKeyEvent(event)
-    }
+  // suppresses the volume change sound
+  override def onKeyUp(keyCode: Int, event: KeyEvent): Boolean = keyCode match {
+    case KeyEvent.KEYCODE_VOLUME_DOWN => true
+    case KeyEvent.KEYCODE_VOLUME_UP => true
+    case _ => super.dispatchKeyEvent(event)
+  }
+
+  override def onKeyDown(keyCode: Int, event: KeyEvent): Boolean = keyCode match {
+    case KeyEvent.KEYCODE_VOLUME_DOWN => AVRemote.volumeDown(); true
+    case KeyEvent.KEYCODE_VOLUME_UP => AVRemote.volumeUp(); true
+    case _ => super.dispatchKeyEvent(event)
   }
 }

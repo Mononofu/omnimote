@@ -8,7 +8,7 @@ object General {
     name := "Omnimote",
     version := "0.1",
     versionCode := 1,
-    scalaVersion := "2.9.2",
+    scalaVersion := "2.10.0",
     platformName in Android := "android-17"
   )
 
@@ -27,7 +27,8 @@ object General {
       resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/",
       libraryDependencies += "org.scalatest" %% "scalatest" % "1.9.1" % "test",
       libraryDependencies += "commons-net" % "commons-net" % "2.0",
-      libraryDependencies += "com.typesafe.akka" % "akka-actor" % "2.0.5"
+      libraryDependencies += "org.scala-lang" % "scala-actors" % "2.10.0",
+      proguardOptimizations in Android += "-keep class scala.collection.SeqLike { public protected *; }"
     )
 }
 
