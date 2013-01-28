@@ -16,8 +16,25 @@ import _root_.android.util.Log
 
 import scala.collection.JavaConversions._
 
+import akka.actor.ActorSystem
+import com.typesafe.config.ConfigFactory
+import akka.actor.Props
+
 object Constants {
   val PREFERENCES_NAME = "wakeontelnet"
+  val TELNET_TIMEOUT = 20
+
+  val customConf = ConfigFactory.parseString("""
+      akka.actor.deployment {
+        /my-service {
+          router = round-robin
+          nr-of-instances = 3
+        }
+      }
+      """)
+  val system = ActorSystem("MySystem", ConfigFactory.load(customConf))
+
+  val avActor = system.actorOf(Props[AVActor], name = "av")
 
   implicit def ViewToRichView(v: View) = new RichView(v)
   implicit def TextViewToRichTextView(v: TextView) = new RichTextview(v)
@@ -25,8 +42,8 @@ object Constants {
 
   def log(str: String) {
     str match {
-      case null => Log.d("oauth", "null")
-      case s => Log.d("oauth", s)
+      case null => Log.d("omnimote", "null")
+      case s => Log.d("omnimote", s)
     }
   }
 

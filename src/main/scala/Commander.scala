@@ -5,61 +5,125 @@ import java.io.PrintStream
 import java.io.BufferedReader
 import java.io.InputStreamReader
 
+import akka.actor.Actor
+import akka.actor.Props
+import akka.event.Logging
+import akka.actor.Cancellable
+
+import akka.util.duration._
+import akka.util.Timeout
+import akka.pattern.ask
+import akka.dispatch.Await
+
+
 import Constants._
 
-object Commander {
-	var outStream: PrintStream = null
-	var inStream: BufferedReader = null
-	val telnet = new TelnetClient()
-	var sessionStarted = -1l
+case class ExecuteCommand(cmd: String)
+case class GetOutput(cmd: String)
+case object CloseSocket
 
-	def startSession() {
-		sessionStarted = System.currentTimeMillis()
-		telnet.connect( "192.168.1.150", 23)
-		telnet.setSoTimeout(300)
-		outStream = new PrintStream( telnet.getOutputStream())
-		inStream = new BufferedReader(new InputStreamReader(telnet.getInputStream()))
-	}
+class AVActor extends Actor {
+  val log = Logging(context.system, this)
+  private var s: Option[java.net.Socket] = None
+  private var pw: java.io.PrintWriter = _
+  private var timeout: Option[Cancellable] = None
 
-	def endSession() {
-		telnet.disconnect()
-		outStream = null
-		inStream = null
-		sessionStarted -1l
-	}
+  def receive = {
+    case ExecuteCommand(cmd) => execute(cmd)
+    case GetOutput(cmd) => execute(cmd, true) match {
+      case Left(error) => sender ! error
+      case Right(output) => sender ! output
+    }
+    case CloseSocket =>
+      s.get.close()
+      s = None
+    case r => log.info("unknown request: " + r)
+  }
 
-	def sendCommand(command: String, checkReply: Boolean = false) {
-		runInBackground {
-			try {
-				var reply = "Executed command: " + command
-				if(null == outStream)
-					startSession()
-				outStream.print(command)
-				outStream.flush()
-				if(checkReply)
-					reply = inStream.readLine()
+  private def resetTimeout() {
+    timeout.map(c => c.cancel)
+    timeout = Some(system.scheduler.scheduleOnce(TELNET_TIMEOUT seconds, self, CloseSocket))
+  }
 
-				endSession()
-				return reply
-	    } catch  {
-	    		case e: java.net.ConnectException =>
-		    		return "failed to connect to server"
-		    	case e: java.net.SocketException =>
-		    		return "permission denied"
-	    }
-	  }
-	}
+  private def execute(cmd: String, output: Boolean = false): Either[Any, String] = {
+    resetTimeout()
+    s match {
+      case None =>
+        try {
+          s = Some(new java.net.Socket("192.168.1.150", 23))
+          s.get.setSoTimeout(200) // reads throw java.net.SocketTimeoutException after 200ms
+          pw = new java.io.PrintWriter(new java.io.OutputStreamWriter(s.get.getOutputStream()), true)
+        } catch {
+          case e: Exception =>
+            log.error("failed to connect to socket")
+            return Left(akka.actor.Status.Failure(e))
+        }
+      case _ =>
+    }
+    pw.println(cmd)
+    if(output) {
+      val i = io.Source.fromInputStream(s.get.getInputStream())
+      var lines = ""
+      try {
+        for(line <- i.getLines()) {
+          log.info("got line: " + line)
+          lines += line + "\n"
+        }
+        Right(lines)
+      } catch {
+        case ex: java.net.SocketTimeoutException =>
+          return Right(lines)
+      }
+    } else {
+      Right("")
+    }
+  }
+}
 
-	def receiverOn() = sendCommand("PO\r\n")
-	def receiverOff() = sendCommand("PF\r\n")
 
-	def receiverMute() = sendCommand("MO\r\n")
-	def receiverUnmute() = sendCommand("MF\r\n")
+object AVRemote {
 
-	def setVolume(negDezibel: Int) = sendCommand("%03dVL\r\n".format(negDezibel * 2 + 161))
+  implicit val timeout = Timeout(1 seconds)
 
-	def selectTuner() = sendCommand("02FN\r\n")
-	def selectPC() = sendCommand("04FN\r\n")
-	def selectTV() = sendCommand("10FN\r\n")
-	def selectPI() = sendCommand("25FN\r\n")
+  def on() = avActor ! ExecuteCommand("PO\r\n")
+  def off() = avActor ! ExecuteCommand("PF\r\n")
+  def selectTuner() = avActor ! ExecuteCommand("02FN\r\n")
+  def selectPC()= avActor ! ExecuteCommand("04FN\r\n")
+  def selectTV() = avActor ! ExecuteCommand("10FN\r\n")
+  def selectPI() = avActor ! ExecuteCommand("25FN\r\n")
+  def selectAUX() = avActor ! ExecuteCommand("01FN\r\n")
+
+  def isOn: Boolean = {
+    val future = avActor ? GetOutput("?P\r\n")
+    val out = Await.result(future, timeout.duration).asInstanceOf[String]
+    out.contains("PWR0")
+  }
+
+  def mute(should: Boolean) {
+    if(should) avActor ! ExecuteCommand("MO\r\n")
+    else avActor ! ExecuteCommand("MF\r\n")
+  }
+
+  def setVolume(negDezibel: Int) {
+    val vol = negDezibel * 2 + 161
+    avActor ! ExecuteCommand("%03dVL\r\n".format(vol))
+  }
+
+  def volumeUp() = setVolume(volume + 2)
+	def volumeDown() = setVolume(volume - 2)
+
+  def volume: Int = {
+    val future = avActor ? GetOutput("?V\r\n")
+    val out = Await.result(future, timeout.duration).asInstanceOf[String]
+    val pattern = """VOL\d\d\d""".r
+
+    for(line <- out.split("\n")) {
+      pattern.findFirstIn(line) match {
+        case Some(v) =>
+          return (v.drop(3).toInt - 161) / 2
+        case None =>
+      }
+    }
+    -100
+  }
 }

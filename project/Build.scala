@@ -24,8 +24,10 @@ object General {
     AndroidManifestGenerator.settings ++
     AndroidMarketPublish.settings ++ Seq (
       keyalias in Android := "change-me",
+      resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/",
       libraryDependencies += "org.scalatest" %% "scalatest" % "1.9.1" % "test",
-      libraryDependencies += "commons-net" % "commons-net" % "2.0"
+      libraryDependencies += "commons-net" % "commons-net" % "2.0",
+      libraryDependencies += "com.typesafe.akka" % "akka-actor" % "2.0.5"
     )
 }
 
