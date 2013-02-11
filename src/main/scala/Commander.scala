@@ -22,23 +22,23 @@ class AVActor extends Actor {
   private var pw: java.io.PrintWriter = _
 
   def act() {
-  	loop {
-  		reactWithin(TELNET_TIMEOUT * 1000) {
-		    case ExecuteCommand(cmd) => execute(cmd)
-		    case GetOutput(cmd) => execute(cmd, true) match {
-		      case Left(error) => sender ! error
-		      case Right(output) => sender ! output
-		    }
-		    case scala.actors.TIMEOUT =>
-		    	s match {
-		    		case Some(sock) =>
-				      sock.close()
-				      s = None
-				    case _ =>
-		    	}
-		    case r => log("unknown request: " + r)
-		  }
-		}
+    loop {
+      reactWithin(TELNET_TIMEOUT * 1000) {
+        case ExecuteCommand(cmd) => execute(cmd)
+        case GetOutput(cmd) => execute(cmd, true) match {
+          case Left(error) => sender ! error
+          case Right(output) => sender ! output
+        }
+        case scala.actors.TIMEOUT =>
+          s match {
+            case Some(sock) =>
+              sock.close()
+              s = None
+            case _ =>
+          }
+        case r => log("unknown request: " + r)
+      }
+    }
   }
 
   private def execute(cmd: String, output: Boolean = false): Either[Any, String] = {
@@ -68,7 +68,7 @@ class AVActor extends Actor {
         Right(lines)
       } catch {
         case ex: java.net.SocketTimeoutException =>
-        	log(s"replying with $lines (after timeout exception)")
+          log(s"replying with $lines (after timeout exception)")
           return Right(lines)
       }
     } else {
@@ -88,10 +88,10 @@ object AVRemote {
   def selectAUX() = avActor ! ExecuteCommand("01FN\r\n")
 
   def isOn: Boolean = (avActor !! GetOutput("?P\r\n"))() match {
-  	case out: String => out.contains("PWR0")
-  	case v =>
-  		log(s"error: received unexpected value $v in isOn")
-  		false
+    case out: String => out.contains("PWR0")
+    case v =>
+      log(s"error: received unexpected value $v in isOn")
+      false
   }
 
   def mute(should: Boolean) {
@@ -105,30 +105,30 @@ object AVRemote {
   }
 
   def volumeUp() = {
-  	val v = volume()
-  	log(s"increasing volume to ${v + 2}")
-		setVolume(v + 2)
+    val v = volume()
+    log(s"increasing volume to ${v + 2}")
+    setVolume(v + 2)
   }
 
-	def volumeDown() = {
-  	val v = volume()
-  	log(s"decreasing volume to ${v - 2}")
-		setVolume(v - 2)
+  def volumeDown() = {
+    val v = volume()
+    log(s"decreasing volume to ${v - 2}")
+    setVolume(v - 2)
   }
 
   def volume(): Int = (avActor !! GetOutput("?V\r\n"))() match {
-  	case out: String =>
-    	val pattern = """VOL\d\d\d""".r
-	    for(line <- out.split("\n")) {
-	      pattern.findFirstIn(line) match {
-	        case Some(v) =>
-	          return (v.drop(3).toInt - 161) / 2
-	        case None =>
-	      }
-	    }
-	    -100
-  	case v =>
-  		log(s"error: received unexpected value $v in volume")
-  		-100
+    case out: String =>
+      val pattern = """VOL\d\d\d""".r
+      for(line <- out.split("\n")) {
+        pattern.findFirstIn(line) match {
+          case Some(v) =>
+            return (v.drop(3).toInt - 161) / 2
+          case None =>
+        }
+      }
+      -100
+    case v =>
+      log(s"error: received unexpected value $v in volume")
+      -100
   }
 }
