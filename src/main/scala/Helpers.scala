@@ -133,7 +133,7 @@ class RichListView(view: ListView) {
 
 import scala.language.dynamics
 
-case class JSONException extends Exception
+case class JSONException(msg: String) extends Exception(msg)
 
 class ScalaJSONIterator(i: java.util.Iterator[java.lang.Object]) extends Iterator[ScalaJSON] {
   def hasNext = i.hasNext()
@@ -144,30 +144,31 @@ class ScalaJSON(o: java.lang.Object) extends Seq[ScalaJSON] with Dynamic {
   override def toString: String = o.toString
   def toInt: Int = o match {
     case i: Integer => i
-    case _ => throw new JSONException
+    case _ => throw new JSONException("not an int")
   }
   def toDouble: Double = o match {
     case d: java.lang.Double => d
     case f: java.lang.Float => f.toDouble
-    case _ => throw new JSONException
+    case _ => throw new JSONException("not a double")
   }
   def apply(key: String): ScalaJSON = o match {
     case m: JSONObject => new ScalaJSON(m.get(key))
-    case _ => throw new JSONException
+    case _ => throw new JSONException(s"didn't find key $key")
   }
 
   def apply(idx: Int): ScalaJSON = o match {
     case a: JSONArray => new ScalaJSON(a.get(idx))
-    case _ => throw new JSONException
+    case _ => throw new JSONException(s"didn't find index $idx")
   }
+
   def length: Int = o match {
     case a: JSONArray => a.size()
     case m: JSONObject => m.size()
-    case _ => throw new JSONException
+    case _ => throw new JSONException("simple object has no length")
   }
   def iterator: Iterator[ScalaJSON] = o match {
     case a: JSONArray => new ScalaJSONIterator(a.iterator())
-    case _ => throw new JSONException
+    case _ => throw new JSONException("can't iterate over simple object")
   }
 
   def selectDynamic(name: String): ScalaJSON = apply(name)

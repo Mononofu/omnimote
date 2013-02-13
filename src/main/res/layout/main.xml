@@ -49,6 +49,10 @@
             android:layout_height="match_parent"
             android:layout_margin="30dp"
             android:gestureStrokeType="multiple"
+            android:fadeDuration="200"
+            android:fadeEnabled="true"
+            android:fadeOffset="300"
+            android:gestureColor="#00ddff"
             android:eventsInterceptionEnabled="true"
             android:background="@drawable/touchpad" />
 
