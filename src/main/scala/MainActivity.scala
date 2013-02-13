@@ -7,6 +7,7 @@ import _root_.android.view.KeyEvent
 import _root_.android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.ViewConfiguration
+import android.os.Handler
 
 
 import org.apache.http.client.methods.HttpPost
@@ -18,6 +19,7 @@ import Constants._
 
 class MainActivity extends Activity with TypedActivity {
   var gestureDetector: GestureDetector = _
+  var playingMovie = false
 
   override def onCreate(bundle: Bundle) {
     super.onCreate(bundle)
@@ -28,11 +30,20 @@ class MainActivity extends Activity with TypedActivity {
       if(multitouch) { sendCommand("Input.Back") }
       else { sendCommand("Input.Left") }
     }
-
     listener.onFlingRight = (_) => sendCommand("Input.Right")
     listener.onFlingUp = (_) => sendCommand("Input.Up")
-    listener.onFlingDown = (_) => sendCommand("Input.Down")
-    listener.onSingleTap = () => sendCommand("Input.Select")
+    listener.onFlingDown = (multitouch: Boolean) => {
+      if(multitouch) {
+        if(playingMovie) sendCommand("Input.ShowOSD")
+        else sendCommand("Input.ContextMenu")
+      }
+      else { sendCommand("Input.Down") }
+    }
+    listener.onSingleTap = () => {
+      if(playingMovie) sendCommand("Player.PlayPause", """{ "playerid": 1 }""")
+      else sendCommand("Input.Select")
+    }
+    listener.onDoubleTap = () => sendCommand("Player.Stop", """{ "playerid": 1 }""")
 
     gestureDetector = new GestureDetector(listener)
 
@@ -59,31 +70,70 @@ class MainActivity extends Activity with TypedActivity {
       }
       gestureDetector.onTouchEvent(e)
     }
+  }
 
+  override def onResume() {
+    super.onResume()
+    checkPlayState.run()
+  }
+
+  override def onPause() {
+    super.onPause()
+    handler.removeCallbacks(checkPlayState)
+  }
+
+  val handler = new Handler()
+
+  private val checkPlayState: Runnable = new Runnable() {
+    override def run() {
+      log("check state")
+      sendCommand("Player.GetActivePlayers", (reply: String) => {
+        val json = parseJSON(reply)
+        if(json.result.length > 0) {
+          log("playing someting")
+          playingMovie = true
+        } else {
+          log("not playing")
+          playingMovie = false
+        }
+      })
+      handler.postDelayed(checkPlayState, 1000*5)
+    }
   }
 
   // suppresses the volume change sound
   override def onKeyUp(keyCode: Int, event: KeyEvent): Boolean = keyCode match {
     case KeyEvent.KEYCODE_VOLUME_DOWN => true
     case KeyEvent.KEYCODE_VOLUME_UP => true
-    case _ => super.dispatchKeyEvent(event)
+    case KeyEvent.KEYCODE_BACK => sendCommand("Input.Back"); true
+    case _ => false
   }
 
   override def onKeyDown(keyCode: Int, event: KeyEvent): Boolean = keyCode match {
     case KeyEvent.KEYCODE_VOLUME_DOWN => AVRemote.volumeDown(); true
     case KeyEvent.KEYCODE_VOLUME_UP => AVRemote.volumeUp(); true
-    case _ => super.dispatchKeyEvent(event)
+    case _ => false
   }
 
+  def sendCommand(cmd: String) { sendCommand(cmd, (_) => {}) }
 
-  def sendCommand(cmd: String) = runInBackground {
+  def sendCommand(cmd: String, params: String) {
+    sendCommandRaw(s"""{"jsonrpc": "2.0", "method": "$cmd", "params": $params, "id": 1}""", (_) => {})
+  }
+
+  def sendCommand(cmd: String, callback: (String) => Unit) {
+    sendCommandRaw(s"""{"jsonrpc": "2.0", "method": "$cmd", "id": 1}""", callback)
+  }
+
+  private def sendCommandRaw(cmd: String, callback: (String) => Unit) = runInBackground {
     val client = new DefaultHttpClient()
     val req = new HttpPost("http://mononofu-nas:8088/jsonrpc")
     req.setHeader("Content-Type", "application/json")
-    req.setEntity(new StringEntity(s"""{"jsonrpc": "2.0", "method": "$cmd", "id": 1}"""))
+    req.setEntity(new StringEntity(cmd))
     val resRaw = client.execute(req)
-    log(resRaw.getStatusLine().getStatusCode() + ": " +
-      io.Source.fromInputStream(resRaw.getEntity().getContent()).mkString(""))
+    val reply = io.Source.fromInputStream(resRaw.getEntity().getContent()).mkString("")
+    callback(reply)
+    log(resRaw.getStatusLine().getStatusCode() + ": " + reply)
   }
 
 }

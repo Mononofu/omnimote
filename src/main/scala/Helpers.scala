@@ -131,6 +131,8 @@ class RichListView(view: ListView) {
    }
 }
 
+import scala.language.dynamics
+
 case class JSONException extends Exception
 
 class ScalaJSONIterator(i: java.util.Iterator[java.lang.Object]) extends Iterator[ScalaJSON] {
@@ -138,7 +140,7 @@ class ScalaJSONIterator(i: java.util.Iterator[java.lang.Object]) extends Iterato
   def next() = new ScalaJSON(i.next())
 }
 
-class ScalaJSON(o: java.lang.Object) extends Seq[ScalaJSON] {
+class ScalaJSON(o: java.lang.Object) extends Seq[ScalaJSON] with Dynamic {
   override def toString: String = o.toString
   def toInt: Int = o match {
     case i: Integer => i
@@ -166,5 +168,14 @@ class ScalaJSON(o: java.lang.Object) extends Seq[ScalaJSON] {
   def iterator: Iterator[ScalaJSON] = o match {
     case a: JSONArray => new ScalaJSONIterator(a.iterator())
     case _ => throw new JSONException
+  }
+
+  def selectDynamic(name: String): ScalaJSON = apply(name)
+  def applyDynamic(name: String)(arg: Any) = {
+    arg match {
+      case s: String => apply(name)(s)
+      case n: Int => apply(name)(n)
+      case u: Unit => apply(name)
+    }
   }
 }

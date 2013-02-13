@@ -56,6 +56,11 @@ class MyGestureListener(vc: ViewConfiguration) extends SimpleOnGestureListener {
     true
   }
 
+  override def onDoubleTap(e: MotionEvent): Boolean = {
+    doubleTap()
+    true
+  }
+
   private var flingLeft: (Boolean) => Unit = (multitouch: Boolean) => {}
   def onFlingLeft = flingLeft
   def onFlingLeft_= (f: (Boolean) => Unit) {
@@ -84,5 +89,11 @@ class MyGestureListener(vc: ViewConfiguration) extends SimpleOnGestureListener {
   def onSingleTap = singleTap
   def onSingleTap_= (f: () => Unit) {
     singleTap = f
+  }
+
+  private var doubleTap: () => Unit = () => {}
+  def onDoubleTap = doubleTap
+  def onDoubleTap_= (f: () => Unit) {
+    doubleTap = f
   }
 }
