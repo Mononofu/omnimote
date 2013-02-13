@@ -99,7 +99,13 @@ object AVRemote {
     else avActor ! ExecuteCommand("MF\r\n")
   }
 
+  private var curVolume: Option[Int] = None
+  private var curVolumeTime = 0l
+
   def setVolume(negDezibel: Int) {
+    curVolume = Some(negDezibel)
+    curVolumeTime = compat.Platform.currentTime
+
     val vol = negDezibel * 2 + 161
     avActor ! ExecuteCommand("%03dVL\r\n".format(vol))
   }
@@ -116,19 +122,27 @@ object AVRemote {
     setVolume(v - 2)
   }
 
-  def volume(): Int = (avActor !! GetOutput("?V\r\n"))() match {
-    case out: String =>
-      val pattern = """VOL\d\d\d""".r
-      for(line <- out.split("\n")) {
-        pattern.findFirstIn(line) match {
-          case Some(v) =>
-            return (v.drop(3).toInt - 161) / 2
-          case None =>
-        }
-      }
-      -100
-    case v =>
-      log(s"error: received unexpected value $v in volume")
-      -100
+  def volume(): Int = {
+    if(curVolume.isEmpty || compat.Platform.currentTime - curVolumeTime > 1000 * 10) {
+      curVolume = Some(fetchVolume())
+      curVolumeTime = compat.Platform.currentTime
+    }
+    curVolume.get
   }
+
+  private def fetchVolume(): Int = (avActor !! GetOutput("?V\r\n"))() match {
+      case out: String =>
+        val pattern = """VOL\d\d\d""".r
+        for(line <- out.split("\n")) {
+          pattern.findFirstIn(line) match {
+            case Some(v) =>
+              return (v.drop(3).toInt - 161) / 2
+            case None =>
+          }
+        }
+        -100
+      case v =>
+        log(s"error: received unexpected value $v in volume")
+        -100
+    }
 }

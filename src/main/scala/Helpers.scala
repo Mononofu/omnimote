@@ -9,6 +9,10 @@ import android.app.ProgressDialog
 import android.content.DialogInterface
 import android.view.MotionEvent
 
+
+import android.gesture.GestureOverlayView
+import android.gesture.Gesture
+
 import net.minidev.json.JSONValue
 import net.minidev.json.JSONArray
 import net.minidev.json.JSONObject
@@ -82,8 +86,8 @@ class RichTextview(tv: TextView) {
 class RichGestureView(gv: GestureOverlayView) {
   def onGesture = throw new Exception
   def onGesture_= (f: (Gesture) => Unit) {
-    view.addOnGesturePerformedListener(
-      new OnGesturePerformedListener() {
+    gv.addOnGesturePerformedListener(
+      new GestureOverlayView.OnGesturePerformedListener() {
         override def onGesturePerformed(v: GestureOverlayView, g: Gesture) {
           f(g)
         }

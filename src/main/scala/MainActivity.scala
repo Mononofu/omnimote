@@ -9,6 +9,10 @@ import _root_.android.view.GestureDetector.SimpleOnGestureListener
 import android.view.MotionEvent
 import android.view.ViewConfiguration
 
+import android.gesture.GestureLibraries
+import android.gesture.GestureOverlayView
+import android.gesture.Gesture
+
 
 
 import org.apache.http.client.methods.HttpPost
@@ -36,12 +40,17 @@ class MainActivity extends Activity with TypedActivity {
     listener.onFlingDown = (_) => sendCommand("Input.Down")
     listener.onSingleTap = () => sendCommand("Input.Select")
 
-    //gestureDetector = new GestureDetector(listener)
+    gestureDetector = new GestureDetector(listener)
 
-    val gestureLibrary = GestureLibraries.fromRawResource(this, R.raw.gestures);
+    /*val gestureLibrary = GestureLibraries.fromRawResource(this, R.raw.gestures);
     gestureLibrary.load();
 
-    findView(TR.touchpad).onGestrue =
+    findViewById(R.id.touchpad).asInstanceOf[GestureOverlayView].onGesture = (g: Gesture) => {
+      val predictions = gestureLibrary.recognize(g)
+      if(predictions.size() > 0) {
+        log("got gesture: " + predictions.get(0).name)
+      }
+    }*/
 
     val fontawesome = Typeface.createFromAsset(getAssets(), "fontawesome.ttf")
 
@@ -56,7 +65,7 @@ class MainActivity extends Activity with TypedActivity {
     findView(TR.pc_btn).onClick = () => AVRemote.selectPC()
     findView(TR.pi_btn).onClick = () => AVRemote.selectPI()
 
-/*
+
     findView(TR.touchpad).onTouch = (e: MotionEvent) => {
       if(e.getActionMasked() != 2)
         log(s"touch event: ${e.getX()}x${e.getY()} - ${e.getPointerId(e.getActionIndex())} - ${e.getActionMasked()}")
@@ -66,8 +75,9 @@ class MainActivity extends Activity with TypedActivity {
       }
       gestureDetector.onTouchEvent(e)
     }
+
   }
-*/
+
   // suppresses the volume change sound
   override def onKeyUp(keyCode: Int, event: KeyEvent): Boolean = keyCode match {
     case KeyEvent.KEYCODE_VOLUME_DOWN => true

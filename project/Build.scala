@@ -27,7 +27,8 @@ object General {
       resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/",
       libraryDependencies += "org.scalatest" %% "scalatest" % "1.9.1" % "test",
       libraryDependencies += "commons-net" % "commons-net" % "2.0",
-      libraryDependencies += "org.scala-lang" % "scala-actors" % "2.10.0"
+      libraryDependencies += "org.scala-lang" % "scala-actors" % "2.10.0",
+      proguardOptimizations in Android += "-keep class scala.collection.SeqLike { public protected *; }"
     )
 }
 
