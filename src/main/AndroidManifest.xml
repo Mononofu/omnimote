@@ -25,4 +25,8 @@
     <uses-sdk android:minSdkVersion="17"/>
     <uses-permission android:name="android.permission.INTERNET"></uses-permission>
 
+    <uses-library android:name="scala_actors-2.10.0"/>
+    <uses-library android:name="scala_library-2.10.0"/>
+    <uses-library android:name="scala_reflect-2.10.0"/>
+
 </manifest>

@@ -43,6 +43,15 @@
 
         </LinearLayout>
 
+        <GestureOverlayView
+            android:id="@+id/touchpad"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_margin="30dp"
+            android:gestureStrokeType="multiple"
+            android:eventsInterceptionEnabled="true"
+            android:background="@drawable/touchpad" />
+
     </LinearLayout>
 
 </RelativeLayout>

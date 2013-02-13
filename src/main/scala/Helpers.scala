@@ -7,6 +7,7 @@ import android.widget.ListView
 import android.widget.AdapterView
 import android.app.ProgressDialog
 import android.content.DialogInterface
+import android.view.MotionEvent
 
 import net.minidev.json.JSONValue
 import net.minidev.json.JSONArray
@@ -28,6 +29,7 @@ object Constants {
   implicit def ViewToRichView(v: View) = new RichView(v)
   implicit def TextViewToRichTextView(v: TextView) = new RichTextview(v)
   implicit def ListViewToRichListView(v: ListView) = new RichListView(v)
+  implicit def GestureViewToRichGestureView(v: GestureOverlayView) = new RichGestureView(v)
 
   def log(str: String) {
     str match {
@@ -77,16 +79,38 @@ class RichTextview(tv: TextView) {
   def text_= (t: String) = tv.setText(t)
 }
 
+class RichGestureView(gv: GestureOverlayView) {
+  def onGesture = throw new Exception
+  def onGesture_= (f: (Gesture) => Unit) {
+    view.addOnGesturePerformedListener(
+      new OnGesturePerformedListener() {
+        override def onGesturePerformed(v: GestureOverlayView, g: Gesture) {
+          f(g)
+        }
+      }
+    )
+  }
+}
+
 class RichView(view: View) {
   def onClick = throw new Exception
   def onClick_= (f: () => Unit) {
      view.setOnClickListener(
-     new View.OnClickListener() {
-      def onClick(v: View) {
-        f()
+      new View.OnClickListener() {
+        def onClick(v: View) {
+          f()
+        }
       }
+    )
+  }
+
+  def onTouch = throw new Exception
+  def onTouch_= (f: (MotionEvent) => Boolean) {
+    view.setOnTouchListener(
+     new View.OnTouchListener() {
+      def onTouch(v: View, e: MotionEvent): Boolean = f(e)
      } )
-   }
+  }
   def findView[T](tr: TypedResource[T]) = view.findViewById(tr.id).asInstanceOf[T]
 }
 
