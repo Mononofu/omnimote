@@ -1,5 +1,5 @@
 <bitmap
   xmlns:android="http://schemas.android.com/apk/res/android"
-  android:src="@drawable/black_lozenge"
+  android:src="@drawable/escheresque_ste"
   android:tileMode="repeat"
   android:dither="true" />

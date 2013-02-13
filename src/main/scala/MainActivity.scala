@@ -19,13 +19,20 @@ import Constants._
 
 class MainActivity extends Activity with TypedActivity {
   var gestureDetector: GestureDetector = _
+  var listener: MyGestureListener = _
   var playingMovie = false
+  val delayBeforeMove = 300             // in milliseconds
+  val buttonPressFrequency = 10
+  var touchStartTime = 0l                    // in milliseconds
+  var touchStartX = 0f
+  var touchStartY = 0f
+  var touchCurrent: MotionEvent = _
 
   override def onCreate(bundle: Bundle) {
     super.onCreate(bundle)
     setContentView(R.layout.main)
 
-    val listener = new MyGestureListener(ViewConfiguration.get(getApplicationContext()))
+    listener = new MyGestureListener(ViewConfiguration.get(getApplicationContext()))
     listener.onFlingLeft = (multitouch: Boolean) => {
       if(multitouch) { sendCommand("Input.Back") }
       else { sendCommand("Input.Left") }
@@ -62,13 +69,32 @@ class MainActivity extends Activity with TypedActivity {
 
 
     findView(TR.touchpad).onTouch = (e: MotionEvent) => {
-      if(e.getActionMasked() != 2)
-        log(s"touch event: ${e.getX()}x${e.getY()} - ${e.getPointerId(e.getActionIndex())} - ${e.getActionMasked()}")
+      touchCurrent = e
+      e.getActionMasked() match {
+        case 0 =>
+          log("starting new long swipe")
+          touchStartTime = compat.Platform.currentTime
+          touchStartX = e.getX()
+          touchStartY = e.getY()
+          moveCursor.run()
+        case 1 => cursorHandler.removeCallbacks(moveCursor)
+        case _ =>
+      }
+      log(s"touch event: ${e.getX()}x${e.getY()} - ${e.getPointerId(e.getActionIndex())} - ${e.getActionMasked()}")
       if(e.getPointerId(e.getActionIndex()) > 0) {
         // touch with second finger
         listener.lastMultitouch = compat.Platform.currentTime
       }
       gestureDetector.onTouchEvent(e)
+    }
+  }
+
+  private val moveCursor: Runnable = new Runnable() {
+    override def run() {
+      if(compat.Platform.currentTime - touchStartTime > delayBeforeMove) {
+        listener.processFling(touchStartX, touchStartY, touchCurrent.getX(), touchCurrent.getY())
+      }
+      cursorHandler.postDelayed(moveCursor, 1000 / buttonPressFrequency)
     }
   }
 
@@ -79,10 +105,12 @@ class MainActivity extends Activity with TypedActivity {
 
   override def onPause() {
     super.onPause()
-    handler.removeCallbacks(checkPlayState)
+    playStateHandler.removeCallbacks(checkPlayState)
+    cursorHandler.removeCallbacks(moveCursor)
   }
 
-  val handler = new Handler()
+  val playStateHandler = new Handler()
+  val cursorHandler = new Handler()
 
   private val checkPlayState: Runnable = new Runnable() {
     override def run() {
@@ -97,7 +125,7 @@ class MainActivity extends Activity with TypedActivity {
           playingMovie = false
         }
       })
-      handler.postDelayed(checkPlayState, 1000*5)
+      playStateHandler.postDelayed(checkPlayState, 1000*5)
     }
   }
 

@@ -25,10 +25,14 @@ class MyGestureListener(vc: ViewConfiguration) extends SimpleOnGestureListener {
   }
 
   override def onFling(e1: MotionEvent, e2: MotionEvent, velocityX: Float, velocityY: Float): Boolean = {
-    log(s"swipe from ${e1.getX()}x${e1.getY()} to ${e2.getX()}x${e2.getY()}")
-    log(s"${e1.getPointerCount()}, ${e2.getPointerCount()}")
-    val dx = e2.getX() - e1.getX()
-    val dy = e1.getY() - e2.getY()
+    processFling(e1.getX(), e1.getY(), e2.getX(), e2.getY())
+    true
+  }
+
+  def processFling(x1: Float, y1: Float, x2: Float, y2: Float) {
+    log(s"swipe from $x1 x $y1 to $x2 x $y2")
+    val dx = x2 - x1
+    val dy = y1 - y2
     val r = Math.sqrt(dx*dx + dy*dy)
     val phi = Math.atan2(dy, dx)
     var PI = Math.PI
