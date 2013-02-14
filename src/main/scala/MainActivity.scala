@@ -8,7 +8,8 @@ import _root_.android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.ViewConfiguration
 import android.os.Handler
-
+import android.view.Menu
+import android.view.MenuItem
 
 import org.apache.http.client.methods.HttpPost
 import org.apache.http.impl.client.DefaultHttpClient
@@ -63,17 +64,6 @@ class MainActivity extends Activity with TypedActivity {
 
     gestureDetector = new GestureDetector(listener)
 
-    val fontawesome = Typeface.createFromAsset(getAssets(), "fontawesome.ttf")
-
-    findView(TR.tuner_btn).setTypeface(fontawesome)
-    findView(TR.tv_btn).setTypeface(fontawesome)
-    findView(TR.pc_btn).setTypeface(fontawesome)
-    findView(TR.pi_btn).setTypeface(fontawesome)
-
-    findView(TR.tuner_btn).onClick = () => AVRemote.selectTuner()
-    findView(TR.tv_btn).onClick = () => AVRemote.selectTV()
-    findView(TR.pc_btn).onClick = () => AVRemote.selectPC()
-    findView(TR.pi_btn).onClick = () => AVRemote.selectPI()
 
     findView(TR.touchpad).onTouch = (e: MotionEvent) => {
       touchCurrentY = e.getY()
@@ -161,6 +151,24 @@ class MainActivity extends Activity with TypedActivity {
     case KeyEvent.KEYCODE_VOLUME_DOWN => AVRemote.volumeDown(); true
     case KeyEvent.KEYCODE_VOLUME_UP => AVRemote.volumeUp(); true
     case _ => false
+  }
+
+  override def onCreateOptionsMenu(menu: Menu) = {
+    val inflater = getMenuInflater()
+    inflater.inflate(R.menu.activity_main, menu);
+    true
+  }
+
+  override def onOptionsItemSelected(item: MenuItem): Boolean = {
+    item.getItemId() match {
+      case R.id.menu_feedback =>
+      case R.id.menu_tuner => AVRemote.selectTuner()
+      case R.id.menu_pc => AVRemote.selectPC()
+      case R.id.menu_tv => AVRemote.selectTV()
+      case R.id.menu_pi => AVRemote.selectPI()
+      case _ => return super.onOptionsItemSelected(item)
+    }
+    true
   }
 
   def sendCommand(cmd: String) { sendCommand(cmd, (_) => {}) }

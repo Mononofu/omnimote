@@ -1,9 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+
 <menu xmlns:android="http://schemas.android.com/apk/res/android" >
 
     <item
-        android:id="@+id/menu_settings"
+        android:id="@+id/menu_tuner"
+        android:orderInCategory="100"
+        android:showAsAction="always"
+        android:icon="@drawable/music"
+        style="@style/MediaButton" />
+
+    <item
+        android:id="@+id/menu_pc"
+        android:orderInCategory="100"
+        android:showAsAction="always"
+        android:icon="@drawable/desktop"
+        style="@style/MediaButton" />
+
+    <item
+        android:id="@+id/menu_tv"
+        android:orderInCategory="100"
+        android:showAsAction="always"
+        android:icon="@drawable/film"
+        style="@style/MediaButton" />
+
+    <item
+        android:id="@+id/menu_pi"
+        android:orderInCategory="100"
+        android:showAsAction="always"
+        android:icon="@drawable/globe"
+        style="@style/MediaButton" />
+
+    <item
+        android:id="@+id/menu_feedback"
         android:orderInCategory="100"
         android:showAsAction="never"
-        android:title="@string/menu_settings"/>
+        android:title="Feedback"/>
 
 </menu>
