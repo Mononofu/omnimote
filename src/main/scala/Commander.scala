@@ -61,14 +61,11 @@ class AVActor extends Actor {
       var lines = ""
       try {
         for(line <- i.getLines()) {
-          log("got line: " + line)
           lines += line + "\n"
         }
-        log(s"replying with $lines")
         Right(lines)
       } catch {
         case ex: java.net.SocketTimeoutException =>
-          log(s"replying with $lines (after timeout exception)")
           return Right(lines)
       }
     } else {
@@ -112,13 +109,11 @@ object AVRemote {
 
   def volumeUp() = {
     val v = volume()
-    log(s"increasing volume to ${v + 2}")
     setVolume(v + 2)
   }
 
   def volumeDown() = {
     val v = volume()
-    log(s"decreasing volume to ${v - 2}")
     setVolume(v - 2)
   }
 
