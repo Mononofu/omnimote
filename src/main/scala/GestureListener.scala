@@ -13,14 +13,7 @@ class MyGestureListener(vc: ViewConfiguration) extends SimpleOnGestureListener {
 
   var lastMultitouch = 0l       // time of last multitouch in milliseconds
 
-
-  log(s"SWIPE_MIN_DISTANCE: $SWIPE_MIN_DISTANCE")
-  log(s"SWIPE_MAX_OFF_PATH: $SWIPE_MAX_OFF_PATH")
-  log(s"SWIPE_THRESHOLD_VELOCITY: $SWIPE_THRESHOLD_VELOCITY")
-
-
   override def onDown(e: MotionEvent): Boolean = {
-    log(s"onDown: ${e.getX()}x${e.getY()}")
     true
   }
 
@@ -30,18 +23,17 @@ class MyGestureListener(vc: ViewConfiguration) extends SimpleOnGestureListener {
   }
 
   def processFling(x1: Float, y1: Float, x2: Float, y2: Float) {
-    log(s"swipe from $x1 x $y1 to $x2 x $y2")
+    //log(s"swipe from $x1 x $y1 to $x2 x $y2")
     val dx = x2 - x1
     val dy = y1 - y2
     val r = Math.sqrt(dx*dx + dy*dy)
     val phi = Math.atan2(dy, dx)
     var PI = Math.PI
-    log(s"\t$dx horizontal, $dy vertical == ($r, $phi)")
+    //log(s"\t$dx horizontal, $dy vertical == ($r, $phi)")
 
     val multitouch = (compat.Platform.currentTime - lastMultitouch < 100)
 
     if(r < SWIPE_MIN_DISTANCE) {
-      log("too short")
       return false
     }
 

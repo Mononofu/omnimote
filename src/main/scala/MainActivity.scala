@@ -25,9 +25,8 @@ class MainActivity extends Activity with TypedActivity {
   val delayBeforeMove = 300             // in milliseconds
   val buttonPressFrequency = 10
   var touchStartTime = 0l                    // in milliseconds
-  var touchStartX = 0f
   var touchStartY = 0f
-  var touchCurrent: MotionEvent = _
+  var touchCurrentY = 0f
 
   override def onCreate(bundle: Bundle) {
     super.onCreate(bundle)
@@ -36,16 +35,25 @@ class MainActivity extends Activity with TypedActivity {
     listener = new MyGestureListener(ViewConfiguration.get(getApplicationContext()))
     listener.onFlingLeft = (multitouch: Boolean) => {
       if(multitouch) { sendCommand("Input.Back") }
-      else { sendCommand("Input.Left") }
+      else {
+        if(playingMovie && !showingOSD) sendCommand("Player.Seek", """{"playerid": 1, "value": "smallbackward"}""")
+        else sendCommand("Input.Left")
+      }
     }
-    listener.onFlingRight = (_) => sendCommand("Input.Right")
+    listener.onFlingRight = (_) => {
+      if(playingMovie && !showingOSD) sendCommand("Player.Seek", """{"playerid": 1, "value": "smallforward"}""")
+      else sendCommand("Input.Right")
+    }
     listener.onFlingUp = (_) => sendCommand("Input.Up")
     listener.onFlingDown = (multitouch: Boolean) => {
       if(multitouch) {
         if(playingMovie) sendCommand("Input.ShowOSD")
         else sendCommand("Input.ContextMenu")
       }
-      else { sendCommand("Input.Down") }
+      else {
+        if(playingMovie && !showingOSD) sendCommand("Input.ShowOSD")
+        else sendCommand("Input.Down")
+      }
     }
     listener.onSingleTap = () => {
       if(playingMovie && !showingOSD) sendCommand("Player.PlayPause", """{ "playerid": 1 }""")
@@ -68,12 +76,10 @@ class MainActivity extends Activity with TypedActivity {
     findView(TR.pi_btn).onClick = () => AVRemote.selectPI()
 
     findView(TR.touchpad).onTouch = (e: MotionEvent) => {
-      touchCurrent = e
+      touchCurrentY = e.getY()
       e.getActionMasked() match {
         case 0 =>
-          log("starting new long swipe")
           touchStartTime = compat.Platform.currentTime
-          touchStartX = e.getX()
           touchStartY = e.getY()
           moveCursor.run()
         case 1 =>
@@ -81,7 +87,7 @@ class MainActivity extends Activity with TypedActivity {
           findView(TR.touchpad).clear(true)
         case _ =>
       }
-      log(s"touch event: ${e.getX()}x${e.getY()} - ${e.getPointerId(e.getActionIndex())} - ${e.getActionMasked()}")
+      //log(s"touch event: ${e.getX()}x${e.getY()} - ${e.getPointerId(e.getActionIndex())} - ${e.getActionMasked()}")
       if(e.getPointerId(e.getActionIndex()) > 0) {
         // touch with second finger
         listener.lastMultitouch = compat.Platform.currentTime
@@ -92,10 +98,15 @@ class MainActivity extends Activity with TypedActivity {
 
   private val moveCursor: Runnable = new Runnable() {
     override def run() {
+      var freq: Double = buttonPressFrequency
       if(compat.Platform.currentTime - touchStartTime > delayBeforeMove) {
-        listener.processFling(0, touchStartY, 0, touchCurrent.getY())
+        val height = findView(TR.touchpad).getHeight()
+        if(Math.abs(touchStartY - touchCurrentY) > height / 10) {
+          listener.processFling(0, touchStartY, 0, touchCurrentY)
+          freq *= (Math.exp(2*(Math.abs(touchStartY - touchCurrentY) / height - 0.1)) - 0.9)
+        }
       }
-      cursorHandler.postDelayed(moveCursor, 1000 / buttonPressFrequency)
+      cursorHandler.postDelayed(moveCursor, (1000.0f / freq).toLong)
     }
   }
 
@@ -115,27 +126,21 @@ class MainActivity extends Activity with TypedActivity {
 
   private val checkPlayState: Runnable = new Runnable() {
     override def run() {
-      log("check state")
       sendCommand("Player.GetActivePlayers", (reply: String) => {
         val json = parseJSON(reply)
         if(json.result.length > 0) {
-          log("playing someting")
           playingMovie = true
         } else {
-          log("not playing")
           playingMovie = false
         }
       })
 
       sendCommand("GUI.GetProperties", """{"properties": ["currentwindow"]}""", (reply: String) => {
-        log(reply)
         val json = parseJSON(reply)
         val label = json.result.currentwindow.label.toString
         if(!label.contains("video")) {
-          log("showing OSD")
           showingOSD = true
         } else {
-          log("not showing OSD")
           showingOSD = false
         }
       })
@@ -173,14 +178,17 @@ class MainActivity extends Activity with TypedActivity {
   }
 
   private def sendCommandRaw(cmd: String, callback: (String) => Unit) = runInBackground {
-    val client = new DefaultHttpClient()
-    val req = new HttpPost("http://mononofu-nas:8088/jsonrpc")
-    req.setHeader("Content-Type", "application/json")
-    req.setEntity(new StringEntity(cmd))
-    val resRaw = client.execute(req)
-    val reply = io.Source.fromInputStream(resRaw.getEntity().getContent()).mkString("")
-    callback(reply)
-    log(resRaw.getStatusLine().getStatusCode() + ": " + reply)
+    try {
+      val client = new DefaultHttpClient()
+      val req = new HttpPost("http://mononofu-nas:8088/jsonrpc")
+      req.setHeader("Content-Type", "application/json")
+      req.setEntity(new StringEntity(cmd))
+      val resRaw = client.execute(req)
+      val reply = io.Source.fromInputStream(resRaw.getEntity().getContent()).mkString("")
+      callback(reply)
+    } catch {
+      case e => log(s"failed to connect: $e")
+    }
   }
 
 }
