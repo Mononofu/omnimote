@@ -1,4 +1,4 @@
-With a variety of gestures, Omnimote allows you to easily control XBMC without looking at your phone. Their meaning varies depending on context, but is always intuitive. Below is a full list:
+With a variety of gestures, Omnimote allows you to easily control XBMC without looking at your phone. The gestures' meaning varies depending on context, but is always intuitive. Below is a full list:
 
 While watching a movie:
 - swipe left/right: skip backward/forward
