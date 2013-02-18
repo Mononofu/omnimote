@@ -7,6 +7,7 @@
         android:orderInCategory="100"
         android:showAsAction="always"
         android:icon="@drawable/music"
+        android:title="Tuner"
         style="@style/MediaButton" />
 
     <item
@@ -14,6 +15,7 @@
         android:orderInCategory="100"
         android:showAsAction="always"
         android:icon="@drawable/desktop"
+        android:title="PC"
         style="@style/MediaButton" />
 
     <item
@@ -21,6 +23,7 @@
         android:orderInCategory="100"
         android:showAsAction="always"
         android:icon="@drawable/film"
+        android:title="TV"
         style="@style/MediaButton" />
 
     <item
@@ -28,12 +31,25 @@
         android:orderInCategory="100"
         android:showAsAction="always"
         android:icon="@drawable/globe"
+        android:title="PI"
         style="@style/MediaButton" />
+
+    <item
+        android:id="@+id/menu_settings"
+        android:orderInCategory="100"
+        android:showAsAction="never"
+        android:title="Settings"/>
 
     <item
         android:id="@+id/menu_feedback"
         android:orderInCategory="100"
         android:showAsAction="never"
         android:title="Feedback"/>
+
+    <item
+        android:id="@+id/menu_help"
+        android:orderInCategory="100"
+        android:showAsAction="never"
+        android:title="Help"/>
 
 </menu>

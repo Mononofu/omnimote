@@ -10,6 +10,9 @@ import android.view.ViewConfiguration
 import android.os.Handler
 import android.view.Menu
 import android.view.MenuItem
+import android.content.Intent
+import android.net.Uri
+import android.app.AlertDialog
 
 import org.apache.http.client.methods.HttpPost
 import org.apache.http.impl.client.DefaultHttpClient
@@ -18,7 +21,7 @@ import org.apache.http.entity.StringEntity
 import Constants._
 
 
-class MainActivity extends Activity with TypedActivity {
+class MainActivity extends ScalaActivity {
   var gestureDetector: GestureDetector = _
   var listener: MyGestureListener = _
   var playingMovie = false
@@ -50,10 +53,13 @@ class MainActivity extends Activity with TypedActivity {
       if(multitouch) {
         if(playingMovie) sendCommand("Input.ShowOSD")
         else sendCommand("Input.ContextMenu")
+        showingOSD = true
       }
       else {
-        if(playingMovie && !showingOSD) sendCommand("Input.ShowOSD")
-        else sendCommand("Input.Down")
+        if(playingMovie && !showingOSD) {
+          sendCommand("Input.ShowOSD")
+          showingOSD = true
+        } else sendCommand("Input.Down")
       }
     }
     listener.onSingleTap = () => {
@@ -83,6 +89,10 @@ class MainActivity extends Activity with TypedActivity {
         listener.lastMultitouch = compat.Platform.currentTime
       }
       gestureDetector.onTouchEvent(e)
+    }
+
+    if(!settings.contains("server")) {
+      startActivity(new Intent(this, classOf[SettingsActivity]))
     }
   }
 
@@ -161,7 +171,15 @@ class MainActivity extends Activity with TypedActivity {
 
   override def onOptionsItemSelected(item: MenuItem): Boolean = {
     item.getItemId() match {
-      case R.id.menu_feedback =>
+      case R.id.menu_feedback => sendFeedback()
+      case R.id.menu_settings =>
+        startActivity(new Intent(this, classOf[SettingsActivity]))
+        tracker.sendEvent("ui_action", "button_press", "settings", null)
+      case R.id.menu_help =>
+        val builder = new AlertDialog.Builder(this);
+        builder.setMessage("test\ntest\n\ntest") //R.string.help_text)
+               .setTitle("Help")
+        builder.show()
       case R.id.menu_tuner => AVRemote.selectTuner()
       case R.id.menu_pc => AVRemote.selectPC()
       case R.id.menu_tv => AVRemote.selectTV()
@@ -169,6 +187,21 @@ class MainActivity extends Activity with TypedActivity {
       case _ => return super.onOptionsItemSelected(item)
     }
     true
+  }
+
+
+  def sendFeedback() {
+    tracker.sendEvent("ui_action", "button_press", "feedback", null)
+    val model = java.net.URLEncoder.encode(android.os.Build.MODEL, "ISO-8859-1");
+    val osversion = java.net.URLEncoder.encode(android.os.Build.VERSION.RELEASE, "ISO-8859-1");
+    val appversion = getPackageManager().getPackageInfo(getPackageName(), 0).versionName
+    val intent = new Intent(Intent.ACTION_SENDTO, Uri.parse(
+      "mailto:j.schrittwieser@gmail.com?subject=Feedback&body=%0A%0A%0A------%0AAndroid%20Device%3A%20"
+      + model
+      + "%0AAndroid%20Version%3A%20"
+      + osversion + "%0AOmnimote%20version%3A%20"
+      + appversion + "%0A%0A"))
+    startActivity(intent);
   }
 
   def sendCommand(cmd: String) { sendCommand(cmd, (_) => {}) }
@@ -185,10 +218,10 @@ class MainActivity extends Activity with TypedActivity {
     sendCommandRaw(s"""{"jsonrpc": "2.0", "method": "$cmd", "params": $params, "id": 1}""", callback)
   }
 
-  private def sendCommandRaw(cmd: String, callback: (String) => Unit) = runInBackground {
+  private def sendCommandRaw(cmd: String, callback: (String) => Unit): Unit = runInBackground {
     try {
       val client = new DefaultHttpClient()
-      val req = new HttpPost("http://mononofu-nas:8088/jsonrpc")
+      val req = new HttpPost(settings.getString("server", "") + "jsonrpc")
       req.setHeader("Content-Type", "application/json")
       req.setEntity(new StringEntity(cmd))
       val resRaw = client.execute(req)

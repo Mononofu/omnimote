@@ -8,6 +8,8 @@ import android.widget.AdapterView
 import android.app.ProgressDialog
 import android.content.DialogInterface
 import android.view.MotionEvent
+import android.widget.EditText
+import android.view.KeyEvent
 
 
 import android.gesture.GestureOverlayView
@@ -25,7 +27,6 @@ import scala.collection.JavaConversions._
 object Constants {
   val PREFERENCES_NAME = "wakeontelnet"
   val TELNET_TIMEOUT = 20
-
 
   val avActor = new AVActor()
   avActor.start()
@@ -81,6 +82,17 @@ import Constants._
 class RichTextview(tv: TextView) {
   def text = tv.getText()
   def text_= (t: String) = tv.setText(t)
+
+  def onEditorAction = throw new Exception
+  def onEditorAction_= (f: (Int, KeyEvent) => Boolean) {
+    tv.setOnEditorActionListener(
+      new TextView.OnEditorActionListener() {
+        override def onEditorAction(v: TextView, actionId: Int, e: KeyEvent): Boolean = {
+          f(actionId, e)
+        }
+      }
+    )
+  }
 }
 
 class RichGestureView(gv: GestureOverlayView) {
@@ -113,7 +125,8 @@ class RichView(view: View) {
     view.setOnTouchListener(
      new View.OnTouchListener() {
       def onTouch(v: View, e: MotionEvent): Boolean = f(e)
-     } )
+     }
+    )
   }
   def findView[T](tr: TypedResource[T]) = view.findViewById(tr.id).asInstanceOf[T]
 }
@@ -121,14 +134,15 @@ class RichView(view: View) {
 
 class RichListView(view: ListView) {
   def onItemClick = throw new Exception
-   def onItemClick_= (f: (Int, Long) => Unit) {
-     view.setOnItemClickListener(
-     new AdapterView.OnItemClickListener() {
-      def onItemClick(parent: AdapterView[_], v: View, position: Int, id: Long) {
-        f(position, id)
+  def onItemClick_= (f: (Int, Long) => Unit) {
+    view.setOnItemClickListener(
+      new AdapterView.OnItemClickListener() {
+        def onItemClick(parent: AdapterView[_], v: View, position: Int, id: Long) {
+          f(position, id)
+        }
       }
-     } )
-   }
+    )
+  }
 }
 
 import scala.language.dynamics
