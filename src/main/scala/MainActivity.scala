@@ -13,6 +13,7 @@ import android.view.MenuItem
 import android.content.Intent
 import android.net.Uri
 import android.app.AlertDialog
+import android.text.util.Linkify
 
 import org.apache.http.client.methods.HttpPost
 import org.apache.http.impl.client.DefaultHttpClient
@@ -176,10 +177,18 @@ class MainActivity extends ScalaActivity {
         startActivity(new Intent(this, classOf[SettingsActivity]))
         tracker.sendEvent("ui_action", "button_press", "settings", null)
       case R.id.menu_help =>
-        val builder = new AlertDialog.Builder(this);
-        builder.setMessage("test\ntest\n\ntest") //R.string.help_text)
-               .setTitle("Help")
-        builder.show()
+        val builder = new AlertDialog.Builder(this)
+        val s = new android.text.SpannableString(getString(R.string.help_text))
+        Linkify.addLinks(s, Linkify.EMAIL_ADDRESSES | Linkify.WEB_URLS)
+        builder.setMessage(s)
+               .setPositiveButton(android.R.string.ok, null)
+               .setTitle("Omnimote - Help")
+        val d = builder.create()
+        d.show()
+        d.findViewById(android.R.id.message) match {
+          case d: android.widget.TextView =>
+            d.setMovementMethod(android.text.method.LinkMovementMethod.getInstance())
+        }
       case R.id.menu_tuner => AVRemote.selectTuner()
       case R.id.menu_pc => AVRemote.selectPC()
       case R.id.menu_tv => AVRemote.selectTV()
