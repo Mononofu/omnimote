@@ -6,8 +6,8 @@ import AndroidKeys._
 object General {
   val settings = Defaults.defaultSettings ++ Seq (
     name := "Omnimote",
-    version := "0.1",
-    versionCode := 1,
+    version := "0.4",
+    versionCode := 4,
     scalaVersion := "2.10.0",
     platformName in Android := "android-17"
   )
@@ -23,7 +23,7 @@ object General {
     proguardSettings ++
     AndroidManifestGenerator.settings ++
     AndroidMarketPublish.settings ++ Seq (
-      keyalias in Android := "change-me",
+      keyalias in Android := "alias_name",
       resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/",
       libraryDependencies += "org.scalatest" %% "scalatest" % "1.9.1" % "test",
       libraryDependencies += "commons-net" % "commons-net" % "2.0",
