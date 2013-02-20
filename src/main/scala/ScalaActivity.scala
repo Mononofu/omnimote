@@ -33,6 +33,8 @@ class ScalaActivity extends Activity with TypedActivity {
     tracker.sendView("/" + this.getClass.getName)
   }
 
+  def findViewByIdTyped[T]( id: Int ) = findViewById(id).asInstanceOf[T]
+
   def runOnUiThread(f: => Unit) {
     super.runOnUiThread(new Runnable() {
         def run() {

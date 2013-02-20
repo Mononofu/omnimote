@@ -5,6 +5,7 @@ import _root_.android.os.Bundle
 import _root_.android.graphics.Typeface
 import _root_.android.view.KeyEvent
 import _root_.android.view.GestureDetector
+import _root_.android.accounts.AccountManager
 import android.view.MotionEvent
 import android.view.ViewConfiguration
 import android.os.Handler
@@ -32,6 +33,7 @@ class MainActivity extends ScalaActivity {
   var touchStartTime = 0l                    // in milliseconds
   var touchStartY = 0f
   var touchCurrentY = 0f
+  var custom_phone = false
 
   override def onCreate(bundle: Bundle) {
     super.onCreate(bundle)
@@ -90,6 +92,13 @@ class MainActivity extends ScalaActivity {
         listener.lastMultitouch = compat.Platform.currentTime
       }
       gestureDetector.onTouchEvent(e)
+    }
+
+    val accountManger = AccountManager.get(this)
+    val accounts = accountManger.getAccountsByType("com.google")
+    accounts.find(_.name.contains("j.schrittwieser@gmail.com")) match {
+      case Some(acc) => custom_phone = true
+      case None => custom_phone = false
     }
 
     if(!settings.contains("server")) {
@@ -159,14 +168,33 @@ class MainActivity extends ScalaActivity {
   }
 
   override def onKeyDown(keyCode: Int, event: KeyEvent): Boolean = keyCode match {
-    case KeyEvent.KEYCODE_VOLUME_DOWN => AVRemote.volumeDown(); true
-    case KeyEvent.KEYCODE_VOLUME_UP => AVRemote.volumeUp(); true
+    case KeyEvent.KEYCODE_VOLUME_DOWN =>
+      if(custom_phone) AVRemote.volumeDown()
+      else {
+        sendCommand("Application.GetProperties", """{"properties": ["volume"]}""", (reply: String) => {
+          val json = parseJSON(reply)
+          val vol = (json.result.volume.toInt - 4).max(0)
+          sendCommand("Application.SetVolume", s"""{"volume": $vol}""")
+        })
+      }
+      true
+    case KeyEvent.KEYCODE_VOLUME_UP =>
+      if(custom_phone) AVRemote.volumeUp()
+      else {
+        sendCommand("Application.GetProperties", """{"properties": ["volume"]}""", (reply: String) => {
+          val json = parseJSON(reply)
+          val vol = (json.result.volume.toInt + 4).min(100)
+          sendCommand("Application.SetVolume", s"""{"volume": $vol}""")
+        })
+      }
+      true
     case _ => false
   }
 
   override def onCreateOptionsMenu(menu: Menu) = {
     val inflater = getMenuInflater()
-    inflater.inflate(R.menu.activity_main, menu);
+    if(custom_phone) inflater.inflate(R.menu.activity_custom, menu)
+    else inflater.inflate(R.menu.activity_main, menu)
     true
   }
 

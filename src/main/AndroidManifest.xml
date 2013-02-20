@@ -27,15 +27,12 @@
             android:theme="@android:style/Theme.Holo" >
         </activity>
 
-
     </application>
 
-    <uses-sdk android:minSdkVersion="17"/>
+    <uses-sdk android:minSdkVersion="11"
+              android:targetSdkVersion="17"/>
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-
-    <uses-library android:name="scala_actors-2.10.0"/>
-    <uses-library android:name="scala_library-2.10.0"/>
-    <uses-library android:name="scala_reflect-2.10.0"/>
+    <uses-permission android:name="android.permission.GET_ACCOUNTS" />
 
 </manifest>

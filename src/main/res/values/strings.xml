@@ -8,17 +8,19 @@
 \n
 While watching a movie:\n
 - swipe left/right: skip backward/forward\n
-- (double) swipe down: context menu\n
-- double swipe left: back\n
+- (two-finger) swipe down: context menu\n
+- two-finger swipe left: back\n
 - single tap: play/pause\n
 - double tap: stop\n
 \n
 While in any menu:\n
 - normal swipes: arrow keys - move in that direction\n
-- double swipe down: context menu\n
-- double swipe left: back\n
+- two-finger swipe down: context menu\n
+- two-finger swipe left: back\n
 - single tap: select\n
 - swipe up/down and hold: scrolling\n
+\n
+Use the volume keys to change the volume XBMC is playing at.\n
 \n
 If you have suggestions or want to request a feature, please don\'t hesitate to contact me via email (j.schrittwieser@gmail.com) or open a request on Github: https://github.com/Mononofu/omnimote/issues\n
 \n
