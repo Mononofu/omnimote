@@ -25,6 +25,8 @@ class ScalaActivity extends Activity with TypedActivity {
     super.onCreate(bundle)
     settings = getSharedPreferences(PREFERENCES_NAME, 0)
 
+    XBMCRemote.settings = settings
+
     val instance = GoogleAnalytics.getInstance(this)
     instance.setDebug(true)
     GAServiceManager.getInstance().setDispatchPeriod(30)
