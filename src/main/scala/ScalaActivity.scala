@@ -20,6 +20,7 @@ import Constants._
 class ScalaActivity extends Activity with TypedActivity {
   var settings: android.content.SharedPreferences = _
   var tracker: Tracker = _
+  var active_popup: Option[Toast] = None
 
   override def onCreate(bundle: Bundle) {
     super.onCreate(bundle)
@@ -37,7 +38,7 @@ class ScalaActivity extends Activity with TypedActivity {
 
   def findViewByIdTyped[T]( id: Int ) = findViewById(id).asInstanceOf[T]
 
-  def runOnUiThread(f: => Unit) {
+  def runOnUiThread[T](f: => T) {
     super.runOnUiThread(new Runnable() {
         def run() {
           try { f }
@@ -51,10 +52,12 @@ class ScalaActivity extends Activity with TypedActivity {
 
   def showPopup(s: String) {
     runOnUiThread {
-      Toast.makeText(
+      active_popup.map(_.cancel())
+      active_popup = Some(Toast.makeText(
         getApplicationContext(),
         s,
-        Toast.LENGTH_SHORT).show()
+        Toast.LENGTH_SHORT))
+      active_popup.map(_.show())
     }
   }
 

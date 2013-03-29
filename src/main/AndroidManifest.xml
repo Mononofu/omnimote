@@ -40,6 +40,10 @@
             android:theme="@android:style/Theme.Holo" >
         </activity>
 
+        <uses-library android:name="scala_actors-2.10.0"/>
+        <uses-library android:name="scala_library-2.10.0"/>
+        <uses-library android:name="scala_reflect-2.10.0"/>
+
     </application>
 
     <uses-sdk android:minSdkVersion="11"

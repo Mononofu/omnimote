@@ -110,11 +110,13 @@ object AVRemote {
   def volumeUp() = {
     val v = volume()
     setVolume(v + 2)
+    v + 2
   }
 
   def volumeDown() = {
     val v = volume()
     setVolume(v - 2)
+    v - 2
   }
 
   def volume(): Int = {

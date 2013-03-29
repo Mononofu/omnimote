@@ -166,8 +166,10 @@ class MainActivity extends ScalaActivity {
 
   override def onKeyDown(keyCode: Int, event: KeyEvent): Boolean = keyCode match {
     case KeyEvent.KEYCODE_VOLUME_DOWN =>
-      if(custom_phone) AVRemote.volumeDown()
-      else {
+      if(custom_phone) {
+        val newVol = AVRemote.volumeDown()
+        showPopup(s"♪: $newVol dB")
+      } else {
         sendCommand("Application.GetProperties", """{"properties": ["volume"]}""", (reply: String) => {
           val json = parseJSON(reply)
           val vol = (json.result.volume.toInt - 4).max(0)
@@ -176,8 +178,10 @@ class MainActivity extends ScalaActivity {
       }
       true
     case KeyEvent.KEYCODE_VOLUME_UP =>
-      if(custom_phone) AVRemote.volumeUp()
-      else {
+      if(custom_phone) {
+        val newVol = AVRemote.volumeUp()
+        showPopup(s"♪: $newVol dB")
+      } else {
         sendCommand("Application.GetProperties", """{"properties": ["volume"]}""", (reply: String) => {
           val json = parseJSON(reply)
           val vol = (json.result.volume.toInt + 4).min(100)

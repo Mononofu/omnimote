@@ -13,7 +13,8 @@ object General {
   )
 
   val proguardSettings = Seq (
-    useProguard in Android := true
+    useProguard in Android := false,
+    skipScalaLibrary in Android := true
   )
 
   lazy val fullAndroidSettings =
